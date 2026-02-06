@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodic Table Data Visualization</title>
+    <!-- Config script for helper functions -->
+    <script src="config.js"></script>
+    <script>
+        // CLIENT-SIDE AUTH CHECK
+        const user = checkAuth(); // Will redirect if not authenticated
+    </script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        #visualization-container {
+            display: block;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Control Panel */
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 280px;
+            animation: slideInLeft 0.6s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #controls h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Modern Gradient Buttons */
+        .layout-btn {
+            margin: 8px 0;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .layout-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .layout-btn:hover::before {
+            left: 100%;
+        }
+
+        .layout-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .layout-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        #sign-out-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+        }
+
+        #sign-out-btn:hover {
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Enhanced Status Bar */
+        #status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.8s ease-out;
+            z-index: 100;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Premium User Info Display */
+        #user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: slideInRight 0.6s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #user-info img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        #user-email-display {
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Smooth transitions for all interactive elements */
+        * {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Visualization Page -->
+    <div id="visualization-container">
+        <!-- User Info -->
+        <div id="user-info">
+            👤 <span id="user-email-display">Guest</span>
+        </div>
+
+        <div id="controls">
+            <h3>📊 Layout Controls</h3>
+            <button class="layout-btn" onclick="switchLayout('table')">
+                📋 Table Layout (20×10 Grid)
+            </button>
+            <button class="layout-btn" onclick="switchLayout('sphere')">
+                🌐 Sphere Layout
+            </button>
+            <button class="layout-btn" onclick="switchLayout('helix')">
+                🧬 Double Helix Layout
+            </button>
+            <button class="layout-btn" onclick="switchLayout('grid')">
+                🔲 Grid Layout (5×4×10)
+            </button>
+            <button id="sign-out-btn" class="layout-btn" onclick="signOut()">
+                🚪 Sign Out
+            </button>
+        </div>
+
+        <div id="status">Loading...</div>
+
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+        import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+
+        // Export to global scope
+        window.THREE = THREE;
+        window.CSS3DRenderer = CSS3DRenderer;
+        window.CSS3DObject = CSS3DObject;
+        window.TrackballControls = TrackballControls;
+        window.PerspectiveCamera = THREE.PerspectiveCamera;
+        window.Scene = THREE.Scene;
+        window.Vector3 = THREE.Vector3;
+
+        // Signal that Three.js is ready
+        window.dispatchEvent(new Event('three-ready'));
+        window.dispatchEvent(new Event('three-loaded'));
+    </script>
+
+    <!-- Your scripts (in correct order) -->
+    <script src="threejs-visualizations.js"></script>
+    <script src="data-loader.js"></script>
+    <script src="script.js"></script>
+
+    <!-- Initialize page -->
+    <script>
+        // Display user info
+        if (user) {
+            const userEmailDisplay = document.getElementById('user-email-display');
+            const userInfo = document.getElementById('user-info');
+
+            // If user has a profile picture, add it
+            if (user.picture) {
+                const img = document.createElement('img');
+                img.src = user.picture;
+                img.alt = user.name || 'User';
+                userInfo.insertBefore(img, userEmailDisplay);
+            }
+
+            userEmailDisplay.textContent = user.email || user.name;
+        }
+
+        // Set status message
+        function setStatus(message) {
+            const status = document.getElementById('status');
+            if (status) status.textContent = message;
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', function () {
+            console.log("Page loaded, user authenticated via LocalStorage");
+            setStatus("Loading data from Google Sheets...");
+
+            // Load data from Google Sheets
+            setTimeout(() => {
+                if (window.loadDataFromGoogleSheets) {
+                    loadDataFromGoogleSheets();
+                } else {
+                    setStatus("Error: Data loader not found");
+                }
+            }, 500);
+        });
+    </script>
+</body>
+
+</html>

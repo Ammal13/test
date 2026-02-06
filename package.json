@@ -1,0 +1,11 @@
+{
+  "name": "periodic-table-visualization",
+  "version": "1.0.0",
+  "description": "3D Periodic Table Visualization",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC"
+}

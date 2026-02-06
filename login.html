@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodic Table Data Visualization - Login</title>
+    <script src="config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 50px 60px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .google-btn-container {
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+
+
+        .info-text {
+            color: #999;
+            font-size: 13px;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+
+        #message-container {
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <h1>🧪 Periodic Table Data Visualization</h1>
+        <p class="subtitle">Sign in with Google to view the interactive 3D data visualization</p>
+
+        <div id="message-container"></div>
+
+        <!-- Google Sign-In Button -->
+        <div class="google-btn-container">
+            <div id="g_id_onload" data-callback="handleGoogleLogin" data-auto_prompt="false">
+            </div>
+
+            <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
+                data-text="signin_with" data-size="large" data-logo_alignment="left" data-width="350">
+            </div>
+        </div>
+
+
+        <p class="info-text">
+            No server required.<br>
+            Authentication runs in your browser.
+        </p>
+    </div>
+
+    <!-- Load Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script>
+        // Set Client ID dynamically
+        const googleDiv = document.getElementById('g_id_onload');
+        if (typeof GOOGLE_CLIENT_ID !== 'undefined') {
+            googleDiv.setAttribute('data-client_id', GOOGLE_CLIENT_ID);
+        } else {
+            showMessage("Error: Config not loaded.", "error");
+        }
+
+        // Check for URL parameters
+        window.onload = function () {
+            // Retrieve messages from URL (e.g., ?logout=success)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('logout') === 'success') {
+                showMessage("✅ You have been successfully logged out.", "success");
+            }
+            // Check for file:// protocol warning
+            if (window.location.protocol === 'file:') {
+                showMessage("⚠️ Google Sign-In may not work when opening file:// directly. Please use a local server (e.g. VS Code Live Server) for best results.", "error");
+            }
+        };
+
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="${type}-message">${text}</div>`;
+        }
+
+        // Handle Google login callback
+        function handleGoogleLogin(response) {
+            console.log('Google login response received');
+            try {
+                // Decode JWT
+                const credential = response.credential;
+                const user = parseJwt(credential);
+
+                console.log("Welcome " + user.name);
+
+                // Store in localStorage
+                localStorage.setItem('user_authenticated', 'true');
+                localStorage.setItem('user_email', user.email);
+                localStorage.setItem('user_name', user.name);
+                localStorage.setItem('user_picture', user.picture);
+                localStorage.setItem('login_time', Date.now());
+
+                // Redirect
+                window.location.href = 'index.html';
+            } catch (e) {
+                console.error("Login processing error", e);
+                showMessage("❌ Login failed processing: " + e.message, "error");
+            }
+        }
+
+
+
+        // Make function globally accessible
+        window.handleGoogleLogin = handleGoogleLogin;
+    </script>
+</body>
+
+</html>
